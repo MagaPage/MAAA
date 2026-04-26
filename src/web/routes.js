@@ -1,38 +1,46 @@
 const express = require('express')
 
+const MAX_COMMAND_LENGTH = 500
+const MAX_WEBHOOK_URL_LENGTH = 200
+const MAX_TOKEN_LENGTH = 100
+
 function createRoutes(botManager, skillController, llmInterface, contextGenerator, leash, integrationManager) {
   const router = express.Router()
 
   router.post('/command', async (req, res) => {
     try {
       const { message } = req.body
-      if (!message) {
+      if (!message || typeof message !== 'string') {
         return res.status(400).json({ error: 'Message is required' })
       }
 
+      const trimmed = message.trim().slice(0, MAX_COMMAND_LENGTH)
+      if (!trimmed) {
+        return res.status(400).json({ error: 'Message cannot be empty' })
+      }
+
       const context = contextGenerator.generate()
-      const command = await llmInterface.processWithHistory(message, context)
+      const command = await llmInterface.processWithHistory(trimmed, context)
 
       if (!command.success) {
         return res.status(400).json({
           error: 'Failed to parse command',
-          details: command.error,
-          raw: command.raw,
+          details: typeof command.error === 'string' ? command.error.slice(0, 200) : 'Unknown error',
         })
       }
 
       const result = await skillController.execute(command)
 
       if (integrationManager) {
-        integrationManager.notifyCommand(message, command.action)
+        integrationManager.notifyCommand(trimmed, command.action)
       }
 
-      res.json({ command, result })
+      res.json({ command: { action: command.action, success: command.success }, result })
     } catch (err) {
       if (integrationManager) {
         integrationManager.notifyError(err.message)
       }
-      res.status(500).json({ error: err.message })
+      res.status(500).json({ error: 'Command execution failed' })
     }
   })
 
@@ -66,8 +74,8 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
         return res.status(400).json({ error: 'Bot already connected' })
       }
       res.json({ message: 'Connection initiated. Check /api/status for updates.' })
-    } catch (err) {
-      res.status(500).json({ error: err.message })
+    } catch {
+      res.status(500).json({ error: 'Connection failed' })
     }
   })
 
@@ -75,8 +83,8 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
     try {
       await botManager.disconnect()
       res.json({ message: 'Bot disconnected' })
-    } catch (err) {
-      res.status(500).json({ error: err.message })
+    } catch {
+      res.status(500).json({ error: 'Disconnect failed' })
     }
   })
 
@@ -84,7 +92,11 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
     const { maxDistance, enabled, override } = req.body
 
     if (maxDistance !== undefined) {
-      leash.maxDistance = maxDistance
+      const dist = parseInt(maxDistance, 10)
+      if (isNaN(dist) || dist < 1 || dist > 10000) {
+        return res.status(400).json({ error: 'maxDistance must be between 1 and 10000' })
+      }
+      leash.maxDistance = dist
     }
 
     if (enabled === true) {
@@ -93,7 +105,7 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
       leash.disable()
     }
 
-    if (override && botManager.bot?.entity) {
+    if (override === true && botManager.bot?.entity) {
       leash.setOrigin(botManager.bot.entity.position)
     }
 
@@ -111,10 +123,23 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
     }
 
     try {
-      integrationManager.configureDiscord(req.body)
+      const { webhookUrl, channelId, notifyCommands, notifyErrors, notifyTasks, enabled } = req.body
+
+      if (webhookUrl && (typeof webhookUrl !== 'string' || webhookUrl.length > MAX_WEBHOOK_URL_LENGTH)) {
+        return res.status(400).json({ error: 'Invalid webhook URL' })
+      }
+
+      integrationManager.configureDiscord({
+        webhookUrl,
+        channelId: typeof channelId === 'string' ? channelId.slice(0, 20) : undefined,
+        notifyCommands: typeof notifyCommands === 'boolean' ? notifyCommands : undefined,
+        notifyErrors: typeof notifyErrors === 'boolean' ? notifyErrors : undefined,
+        notifyTasks: typeof notifyTasks === 'boolean' ? notifyTasks : undefined,
+        enabled: typeof enabled === 'boolean' ? enabled : undefined,
+      })
       res.json({ success: true, message: 'Discord integration configured' })
     } catch (err) {
-      res.status(500).json({ error: err.message })
+      res.status(400).json({ error: err.message || 'Invalid configuration' })
     }
   })
 
@@ -125,13 +150,16 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
 
     try {
       const { webhookUrl } = req.body
-      if (!webhookUrl) {
+      if (!webhookUrl || typeof webhookUrl !== 'string') {
         return res.status(400).json({ error: 'webhookUrl is required' })
+      }
+      if (webhookUrl.length > MAX_WEBHOOK_URL_LENGTH) {
+        return res.status(400).json({ error: 'Invalid webhook URL' })
       }
       await integrationManager.testDiscordWebhook(webhookUrl)
       res.json({ success: true, message: 'Test message sent' })
     } catch (err) {
-      res.status(500).json({ error: err.message })
+      res.status(400).json({ error: err.message || 'Test failed' })
     }
   })
 
@@ -141,10 +169,23 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
     }
 
     try {
-      integrationManager.configureTelegram(req.body)
+      const { botToken, chatId, notifyCommands, notifyErrors, notifyTasks, enabled } = req.body
+
+      if (botToken && (typeof botToken !== 'string' || botToken.length > MAX_TOKEN_LENGTH)) {
+        return res.status(400).json({ error: 'Invalid bot token' })
+      }
+
+      integrationManager.configureTelegram({
+        botToken,
+        chatId: typeof chatId === 'string' ? chatId.slice(0, 20) : undefined,
+        notifyCommands: typeof notifyCommands === 'boolean' ? notifyCommands : undefined,
+        notifyErrors: typeof notifyErrors === 'boolean' ? notifyErrors : undefined,
+        notifyTasks: typeof notifyTasks === 'boolean' ? notifyTasks : undefined,
+        enabled: typeof enabled === 'boolean' ? enabled : undefined,
+      })
       res.json({ success: true, message: 'Telegram integration configured' })
     } catch (err) {
-      res.status(500).json({ error: err.message })
+      res.status(400).json({ error: err.message || 'Invalid configuration' })
     }
   })
 
@@ -155,13 +196,16 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
 
     try {
       const { botToken, chatId } = req.body
-      if (!botToken || !chatId) {
+      if (!botToken || typeof botToken !== 'string' || !chatId || typeof chatId !== 'string') {
         return res.status(400).json({ error: 'botToken and chatId are required' })
+      }
+      if (botToken.length > MAX_TOKEN_LENGTH || chatId.length > 20) {
+        return res.status(400).json({ error: 'Invalid input' })
       }
       await integrationManager.testTelegram(botToken, chatId)
       res.json({ success: true, message: 'Test message sent' })
     } catch (err) {
-      res.status(500).json({ error: err.message })
+      res.status(400).json({ error: err.message || 'Test failed' })
     }
   })
 

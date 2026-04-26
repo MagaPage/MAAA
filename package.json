@@ -25,6 +25,8 @@
   "dependencies": {
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.4.1",
+    "helmet": "^8.1.0",
     "minecraft-data": "^3.108.0",
     "mineflayer": "^4.37.0",
     "mineflayer-pathfinder": "^2.4.5",

@@ -570,6 +570,11 @@ el.discordSave.addEventListener('click', async () => {
     return
   }
 
+  if (!/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/.+$/.test(config.webhookUrl)) {
+    showToast('Invalid Discord webhook URL. Must start with https://discord.com/api/webhooks/', 'error')
+    return
+  }
+
   try {
     const response = await fetch('/api/integrations/discord', {
       method: 'POST',
@@ -600,6 +605,11 @@ el.discordTest.addEventListener('click', async () => {
   const webhookUrl = el.discordWebhookUrl.value.trim()
   if (!webhookUrl) {
     showToast('Enter a webhook URL first', 'error')
+    return
+  }
+
+  if (!/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/.+$/.test(webhookUrl)) {
+    showToast('Invalid Discord webhook URL format', 'error')
     return
   }
 
@@ -635,6 +645,16 @@ el.telegramSave.addEventListener('click', async () => {
     return
   }
 
+  if (!/^\d+:[A-Za-z0-9_-]{20,}$/.test(config.botToken)) {
+    showToast('Invalid bot token format. Get your token from @BotFather on Telegram', 'error')
+    return
+  }
+
+  if (!/^-?\d{1,20}$/.test(config.chatId)) {
+    showToast('Invalid Chat ID format. Must be a numeric ID', 'error')
+    return
+  }
+
   try {
     const response = await fetch('/api/integrations/telegram', {
       method: 'POST',
@@ -666,6 +686,11 @@ el.telegramTest.addEventListener('click', async () => {
   const chatId = el.telegramChatId.value.trim()
   if (!botToken || !chatId) {
     showToast('Enter bot token and chat ID first', 'error')
+    return
+  }
+
+  if (!/^\d+:[A-Za-z0-9_-]{20,}$/.test(botToken)) {
+    showToast('Invalid bot token format', 'error')
     return
   }
 

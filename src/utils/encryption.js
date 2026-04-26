@@ -2,14 +2,15 @@ const crypto = require('crypto')
 
 const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 16
-// Auth tag length is controlled by the GCM cipher (16 bytes default)
+const SALT_LENGTH = 16
 
-function deriveKey(password) {
-  return crypto.scryptSync(password, 'maaa-salt', 32)
+function deriveKey(password, salt) {
+  return crypto.scryptSync(password, salt, 32)
 }
 
 function encrypt(plaintext, keyString) {
-  const key = deriveKey(keyString)
+  const salt = crypto.randomBytes(SALT_LENGTH)
+  const key = deriveKey(keyString, salt)
   const iv = crypto.randomBytes(IV_LENGTH)
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv)
 
@@ -18,6 +19,7 @@ function encrypt(plaintext, keyString) {
   const authTag = cipher.getAuthTag()
 
   return {
+    salt: salt.toString('hex'),
     iv: iv.toString('hex'),
     authTag: authTag.toString('hex'),
     ciphertext,
@@ -25,7 +27,8 @@ function encrypt(plaintext, keyString) {
 }
 
 function decrypt(encrypted, keyString) {
-  const key = deriveKey(keyString)
+  const salt = encrypted.salt ? Buffer.from(encrypted.salt, 'hex') : Buffer.from('maaa-salt')
+  const key = deriveKey(keyString, salt)
   const iv = Buffer.from(encrypted.iv, 'hex')
   const authTag = Buffer.from(encrypted.authTag, 'hex')
   const decipher = crypto.createDecipheriv(ALGORITHM, key, iv)
