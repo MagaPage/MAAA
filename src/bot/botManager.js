@@ -86,7 +86,7 @@ class BotManager extends EventEmitter {
 
       this.bot.on('error', (err) => {
         this.logger.error(`Bot error: ${err.message}`)
-        this.emit('error', err)
+        this.emit('botError', err)
         if (!this.bot) {
           reject(err)
         }

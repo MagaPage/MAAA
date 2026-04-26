@@ -101,6 +101,8 @@ class Leash {
         this._returning = false
         this.bot.removeListener('move', checkReturn)
         this.bot.removeListener('death', cleanup)
+        this.bot.removeListener('path_reset', cleanup)
+        this.bot.removeListener('goal_reached', cleanup)
         clearTimeout(timeout)
       }
 
@@ -113,6 +115,8 @@ class Leash {
       const timeout = setTimeout(cleanup, 30000)
       this.bot.on('move', checkReturn)
       this.bot.once('death', cleanup)
+      this.bot.once('path_reset', cleanup)
+      this.bot.once('goal_reached', cleanup)
     }
   }
 }
