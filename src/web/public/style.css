@@ -1,0 +1,270 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0f0f1a;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #2a2a3a;
+}
+
+header h1 {
+  font-size: 1.5rem;
+  color: #7c9aff;
+}
+
+.status {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status.connected {
+  background: #1a3a1a;
+  color: #4caf50;
+  border: 1px solid #4caf50;
+}
+
+.status.disconnected {
+  background: #3a1a1a;
+  color: #f44336;
+  border: 1px solid #f44336;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.panel {
+  background: #1a1a2e;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #2a2a3a;
+}
+
+.panel.wide {
+  grid-column: 1 / -1;
+}
+
+.panel h2 {
+  font-size: 1rem;
+  color: #8a8aaa;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat label {
+  color: #6a6a8a;
+  font-size: 0.9rem;
+}
+
+.stat span {
+  color: #c0c0d0;
+  font-family: 'Courier New', monospace;
+}
+
+.bar-container {
+  width: 120px;
+  height: 20px;
+  background: #2a2a3a;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.bar-container span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  z-index: 1;
+}
+
+.health-bar {
+  background: linear-gradient(90deg, #f44336, #e91e63);
+}
+
+.food-bar {
+  background: linear-gradient(90deg, #ff9800, #ffc107);
+}
+
+.inventory-list {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inventory-item {
+  background: #2a2a3a;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #b0b0c0;
+}
+
+.inventory-item .count {
+  color: #7c9aff;
+  font-weight: 600;
+}
+
+.empty {
+  color: #4a4a5a;
+  font-style: italic;
+}
+
+.command-input {
+  display: flex;
+  gap: 8px;
+}
+
+.command-input input {
+  flex: 1;
+  padding: 12px 16px;
+  background: #0f0f1a;
+  border: 1px solid #3a3a4a;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.command-input input:focus {
+  border-color: #7c9aff;
+}
+
+.command-input button {
+  padding: 12px 24px;
+  background: #7c9aff;
+  color: #0f0f1a;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.command-input button:hover {
+  background: #5a7adf;
+}
+
+.command-input button:disabled {
+  background: #3a3a4a;
+  cursor: not-allowed;
+}
+
+.current-task {
+  margin-top: 12px;
+  padding: 12px;
+  background: #2a2a3a;
+  border-radius: 8px;
+}
+
+.current-task.hidden {
+  display: none;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #1a1a2e;
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c9aff, #4caf50);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.log-container {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log-entry {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
+  border-left: 3px solid transparent;
+}
+
+.log-entry.info {
+  border-left-color: #7c9aff;
+  background: #1a1a2e;
+}
+
+.log-entry.warn {
+  border-left-color: #ff9800;
+  background: #2a2a1e;
+}
+
+.log-entry.error {
+  border-left-color: #f44336;
+  background: #2a1a1a;
+}
+
+.log-entry .timestamp {
+  color: #4a4a5a;
+  margin-right: 8px;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel.wide {
+    grid-column: 1;
+  }
+}

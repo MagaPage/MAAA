@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAAA - Minecraft AI Architect & Automator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⛏ MAAA Dashboard</h1>
+      <div id="connectionStatus" class="status disconnected">Disconnected</div>
+    </header>
+
+    <div class="grid">
+      <section class="panel" id="statusPanel">
+        <h2>Bot Status</h2>
+        <div class="stats">
+          <div class="stat">
+            <label>Position</label>
+            <span id="position">—</span>
+          </div>
+          <div class="stat">
+            <label>Health</label>
+            <div class="bar-container">
+              <div id="healthBar" class="bar health-bar" style="width: 0%"></div>
+              <span id="healthText">0/20</span>
+            </div>
+          </div>
+          <div class="stat">
+            <label>Food</label>
+            <div class="bar-container">
+              <div id="foodBar" class="bar food-bar" style="width: 0%"></div>
+              <span id="foodText">0/20</span>
+            </div>
+          </div>
+          <div class="stat">
+            <label>Dimension</label>
+            <span id="dimension">—</span>
+          </div>
+          <div class="stat">
+            <label>Leash Distance</label>
+            <span id="leashDistance">—</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="inventoryPanel">
+        <h2>Inventory</h2>
+        <div id="inventoryList" class="inventory-list">
+          <p class="empty">No items</p>
+        </div>
+      </section>
+
+      <section class="panel wide" id="commandPanel">
+        <h2>Command Center</h2>
+        <div class="command-input">
+          <input type="text" id="commandInput" placeholder='Try: "Build a 10-block high cobblestone tower"' />
+          <button id="sendCommand">Send</button>
+        </div>
+        <div id="currentTask" class="current-task hidden">
+          <span id="taskAction">—</span>
+          <div class="progress-bar">
+            <div id="taskProgress" class="progress-fill"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel wide" id="logPanel">
+        <h2>Activity Log</h2>
+        <div id="logContainer" class="log-container">
+          <div class="log-entry info">Dashboard initialized. Waiting for bot connection...</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "name": "minecraft-ai-architect",
+  "version": "1.0.0",
+  "description": "Minecraft AI Architect & Automator - AI-powered Minecraft bot with LLM command interpretation, autonomous navigation, and procedural building",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "lint": "eslint src/ test/",
+    "lint:fix": "eslint src/ test/ --fix",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "minecraft",
+    "bot",
+    "ai",
+    "mineflayer",
+    "openai",
+    "gpt-4",
+    "pathfinding",
+    "automation"
+  ],
+  "author": "MagaPage",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "minecraft-data": "^3.108.0",
+    "mineflayer": "^4.37.0",
+    "mineflayer-pathfinder": "^2.4.5",
+    "openai": "^4.85.0",
+    "prismarine-auth": "^3.1.1",
+    "socket.io": "^4.8.1",
+    "vec3": "^0.1.10",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
