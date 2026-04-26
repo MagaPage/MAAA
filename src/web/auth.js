@@ -81,12 +81,15 @@ function createAuth(config, logger) {
         return res.status(400).json({ error: 'Password is required' })
       }
 
-      const isValid = crypto.timingSafeEqual(
-        Buffer.from(inputPassword.slice(0, 256)),
-        Buffer.from(password.slice(0, 256).padEnd(inputPassword.slice(0, 256).length))
-      )
+      const maxLen = Math.max(inputPassword.length, password.length)
+      const inputBuf = Buffer.alloc(maxLen)
+      const passBuf = Buffer.alloc(maxLen)
+      Buffer.from(inputPassword).copy(inputBuf)
+      Buffer.from(password).copy(passBuf)
 
-      if (!isValid || inputPassword !== password) {
+      const isValid = crypto.timingSafeEqual(inputBuf, passBuf)
+
+      if (!isValid) {
         logger.warn('Failed dashboard login attempt')
         return res.status(401).json({ error: 'Invalid password' })
       }
