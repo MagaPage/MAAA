@@ -1,0 +1,8 @@
+node_modules/
+.env
+auth_cache/
+*.log
+*.enc
+.DS_Store
+dist/
+coverage/
