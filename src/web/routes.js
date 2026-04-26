@@ -1,6 +1,6 @@
 const express = require('express')
 
-function createRoutes(botManager, skillController, llmInterface, contextGenerator, leash) {
+function createRoutes(botManager, skillController, llmInterface, contextGenerator, leash, integrationManager) {
   const router = express.Router()
 
   router.post('/command', async (req, res) => {
@@ -22,8 +22,16 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
       }
 
       const result = await skillController.execute(command)
+
+      if (integrationManager) {
+        integrationManager.notifyCommand(message, command.action)
+      }
+
       res.json({ command, result })
     } catch (err) {
+      if (integrationManager) {
+        integrationManager.notifyError(err.message)
+      }
       res.status(500).json({ error: err.message })
     }
   })
@@ -94,6 +102,67 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
       maxDistance: leash.maxDistance,
       origin: leash.origin,
     })
+  })
+
+  // Integration routes
+  router.post('/integrations/discord', (req, res) => {
+    if (!integrationManager) {
+      return res.status(503).json({ error: 'Integration manager not available' })
+    }
+
+    try {
+      integrationManager.configureDiscord(req.body)
+      res.json({ success: true, message: 'Discord integration configured' })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  router.post('/integrations/discord/test', async (req, res) => {
+    if (!integrationManager) {
+      return res.status(503).json({ error: 'Integration manager not available' })
+    }
+
+    try {
+      const { webhookUrl } = req.body
+      if (!webhookUrl) {
+        return res.status(400).json({ error: 'webhookUrl is required' })
+      }
+      await integrationManager.testDiscordWebhook(webhookUrl)
+      res.json({ success: true, message: 'Test message sent' })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  router.post('/integrations/telegram', (req, res) => {
+    if (!integrationManager) {
+      return res.status(503).json({ error: 'Integration manager not available' })
+    }
+
+    try {
+      integrationManager.configureTelegram(req.body)
+      res.json({ success: true, message: 'Telegram integration configured' })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  router.post('/integrations/telegram/test', async (req, res) => {
+    if (!integrationManager) {
+      return res.status(503).json({ error: 'Integration manager not available' })
+    }
+
+    try {
+      const { botToken, chatId } = req.body
+      if (!botToken || !chatId) {
+        return res.status(400).json({ error: 'botToken and chatId are required' })
+      }
+      await integrationManager.testTelegram(botToken, chatId)
+      res.json({ success: true, message: 'Test message sent' })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
   })
 
   return router

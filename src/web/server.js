@@ -3,6 +3,7 @@ const http = require('http')
 const { Server: SocketServer } = require('socket.io')
 const path = require('path')
 const { createRoutes } = require('./routes')
+const { IntegrationManager } = require('./integrations')
 
 class DashboardServer {
   constructor(config, logger) {
@@ -13,6 +14,7 @@ class DashboardServer {
     this.io = new SocketServer(this.server, {
       cors: { origin: '*' },
     })
+    this.integrationManager = new IntegrationManager(logger)
 
     this.app.use(express.json())
     this.app.use(express.static(path.join(__dirname, 'public')))
@@ -30,7 +32,7 @@ class DashboardServer {
   }
 
   mountRoutes(botManager, skillController, llmInterface, contextGenerator, leash) {
-    const routes = createRoutes(botManager, skillController, llmInterface, contextGenerator, leash)
+    const routes = createRoutes(botManager, skillController, llmInterface, contextGenerator, leash, this.integrationManager)
     this.app.use('/api', routes)
   }
 
@@ -67,10 +69,12 @@ class DashboardServer {
 
     botManager.on('death', () => {
       this.io.emit('log', { type: 'error', message: 'Bot died!' })
+      this.integrationManager.notifyError('Bot died!')
     })
 
     botManager.on('kicked', (reason) => {
       this.io.emit('log', { type: 'error', message: `Kicked: ${reason}` })
+      this.integrationManager.notifyError(`Bot kicked: ${reason}`)
     })
 
     botManager.on('disconnected', (reason) => {
@@ -92,11 +96,13 @@ class DashboardServer {
         type: 'info',
         message: `Task complete: ${result.action} (${result.duration}ms)`,
       })
+      this.integrationManager.notifyTaskComplete(result.action, result.duration)
     })
 
     skillController.on('taskError', (error) => {
       this.io.emit('taskError', error)
       this.io.emit('log', { type: 'error', message: `Task error: ${error.error}` })
+      this.integrationManager.notifyError(`Task error: ${error.error}`)
     })
   }
 

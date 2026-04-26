@@ -1,80 +1,493 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MAAA - Minecraft AI Architect & Automator</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>⛏ MAAA Dashboard</h1>
-      <div id="connectionStatus" class="status disconnected">Disconnected</div>
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <span class="brand-text">MAAA</span>
+    </div>
+
+    <div class="sidebar-nav">
+      <button class="nav-item active" data-page="overview" title="Overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Overview</span>
+      </button>
+      <button class="nav-item" data-page="command" title="Command Center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        <span>Commands</span>
+      </button>
+      <button class="nav-item" data-page="inventory" title="Inventory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <span>Inventory</span>
+      </button>
+      <button class="nav-item" data-page="integrations" title="Integrations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span>Integrations</span>
+      </button>
+      <button class="nav-item" data-page="logs" title="Activity Log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Logs</span>
+      </button>
+      <button class="nav-item" data-page="settings" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="sidebar-collapse" id="sidebarToggle" title="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content" id="mainContent">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu" id="mobileMenu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <h1 class="page-title" id="pageTitle">Overview</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="connection-badge" id="connectionStatus">
+          <span class="pulse-dot"></span>
+          <span class="connection-text">Connecting...</span>
+        </div>
+        <div class="notification-bell" id="notificationBell" title="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="badge" id="notifBadge">0</span>
+        </div>
+        <div class="keyboard-hint" title="Press ? for shortcuts">
+          <kbd>?</kbd>
+        </div>
+      </div>
     </header>
 
-    <div class="grid">
-      <section class="panel" id="statusPanel">
-        <h2>Bot Status</h2>
-        <div class="stats">
-          <div class="stat">
-            <label>Position</label>
-            <span id="position">—</span>
+    <!-- Page: Overview -->
+    <div class="page active" id="page-overview">
+      <div class="overview-grid">
+        <!-- Bot Vitals Card -->
+        <div class="card card-vitals">
+          <div class="card-header">
+            <h2>Bot Vitals</h2>
+            <span class="card-badge" id="botStatusBadge">Offline</span>
           </div>
-          <div class="stat">
-            <label>Health</label>
-            <div class="bar-container">
-              <div id="healthBar" class="bar health-bar" style="width: 0%"></div>
-              <span id="healthText">0/20</span>
+          <div class="vitals-grid">
+            <div class="vital-item">
+              <div class="vital-icon health-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <div class="vital-info">
+                <span class="vital-label">Health</span>
+                <div class="vital-bar-wrap">
+                  <div class="vital-bar health-bar" id="healthBar" style="width: 0%"></div>
+                </div>
+                <span class="vital-value" id="healthText">0/20</span>
+              </div>
+            </div>
+            <div class="vital-item">
+              <div class="vital-icon food-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+              </div>
+              <div class="vital-info">
+                <span class="vital-label">Food</span>
+                <div class="vital-bar-wrap">
+                  <div class="vital-bar food-bar" id="foodBar" style="width: 0%"></div>
+                </div>
+                <span class="vital-value" id="foodText">0/20</span>
+              </div>
             </div>
           </div>
-          <div class="stat">
-            <label>Food</label>
-            <div class="bar-container">
-              <div id="foodBar" class="bar food-bar" style="width: 0%"></div>
-              <span id="foodText">0/20</span>
+        </div>
+
+        <!-- Position Card -->
+        <div class="card card-position">
+          <div class="card-header">
+            <h2>Position</h2>
+          </div>
+          <div class="position-display">
+            <div class="coord">
+              <span class="coord-label">X</span>
+              <span class="coord-value" id="posX">—</span>
+            </div>
+            <div class="coord">
+              <span class="coord-label">Y</span>
+              <span class="coord-value" id="posY">—</span>
+            </div>
+            <div class="coord">
+              <span class="coord-label">Z</span>
+              <span class="coord-value" id="posZ">—</span>
             </div>
           </div>
-          <div class="stat">
-            <label>Dimension</label>
-            <span id="dimension">—</span>
-          </div>
-          <div class="stat">
-            <label>Leash Distance</label>
-            <span id="leashDistance">—</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel" id="inventoryPanel">
-        <h2>Inventory</h2>
-        <div id="inventoryList" class="inventory-list">
-          <p class="empty">No items</p>
-        </div>
-      </section>
-
-      <section class="panel wide" id="commandPanel">
-        <h2>Command Center</h2>
-        <div class="command-input">
-          <input type="text" id="commandInput" placeholder='Try: "Build a 10-block high cobblestone tower"' />
-          <button id="sendCommand">Send</button>
-        </div>
-        <div id="currentTask" class="current-task hidden">
-          <span id="taskAction">—</span>
-          <div class="progress-bar">
-            <div id="taskProgress" class="progress-fill"></div>
+          <div class="position-meta">
+            <div class="meta-item">
+              <span class="meta-label">Dimension</span>
+              <span class="meta-value" id="dimension">—</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Leash</span>
+              <span class="meta-value" id="leashDistance">—</span>
+            </div>
           </div>
         </div>
-      </section>
 
-      <section class="panel wide" id="logPanel">
-        <h2>Activity Log</h2>
-        <div id="logContainer" class="log-container">
-          <div class="log-entry info">Dashboard initialized. Waiting for bot connection...</div>
+        <!-- Quick Command Card -->
+        <div class="card card-quickcmd">
+          <div class="card-header">
+            <h2>Quick Command</h2>
+            <kbd>Enter</kbd>
+          </div>
+          <div class="quick-command">
+            <input type="text" id="quickCommandInput" class="cmd-input" placeholder="Tell the bot what to do..." autocomplete="off" />
+            <button id="quickSendBtn" class="cmd-send" title="Send command">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+          <div id="quickTaskStatus" class="task-status hidden">
+            <div class="task-info">
+              <span class="task-pulse"></span>
+              <span id="quickTaskAction">—</span>
+            </div>
+            <div class="task-progress-bar">
+              <div id="quickTaskProgress" class="task-progress-fill"></div>
+            </div>
+          </div>
         </div>
-      </section>
+
+        <!-- Current Task Card -->
+        <div class="card card-task">
+          <div class="card-header">
+            <h2>Current Task</h2>
+          </div>
+          <div id="currentTaskDisplay" class="task-display">
+            <div class="task-idle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span>Idle — no active task</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity Card -->
+        <div class="card card-activity">
+          <div class="card-header">
+            <h2>Recent Activity</h2>
+            <button class="card-action" id="viewAllLogs">View All</button>
+          </div>
+          <div id="recentLog" class="recent-log">
+            <div class="log-item log-info">
+              <span class="log-dot"></span>
+              <span class="log-msg">Dashboard initialized. Waiting for bot connection...</span>
+              <span class="log-time">now</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Integrations Status Card -->
+        <div class="card card-integrations-status">
+          <div class="card-header">
+            <h2>Integrations</h2>
+            <button class="card-action" id="goToIntegrations">Configure</button>
+          </div>
+          <div class="integration-status-list">
+            <div class="integration-row">
+              <div class="integration-icon discord-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+              </div>
+              <div class="integration-info">
+                <span class="integration-name">Discord</span>
+                <span class="integration-desc" id="discordStatus">Not configured</span>
+              </div>
+              <div class="integration-toggle">
+                <label class="switch">
+                  <input type="checkbox" id="discordToggle" disabled>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="integration-row">
+              <div class="integration-icon telegram-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+              </div>
+              <div class="integration-info">
+                <span class="integration-name">Telegram</span>
+                <span class="integration-desc" id="telegramStatus">Not configured</span>
+              </div>
+              <div class="integration-toggle">
+                <label class="switch">
+                  <input type="checkbox" id="telegramToggle" disabled>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Command Center -->
+    <div class="page" id="page-command">
+      <div class="command-layout">
+        <div class="card command-card">
+          <div class="card-header">
+            <h2>Command Center</h2>
+            <span class="cmd-hint">Natural language commands powered by GPT-4o</span>
+          </div>
+          <div class="command-area">
+            <div id="commandHistory" class="command-history">
+              <div class="cmd-welcome">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cmd-welcome-icon"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                <h3>Welcome to MAAA Command Center</h3>
+                <p>Type natural language commands to control your Minecraft bot.</p>
+                <div class="cmd-examples">
+                  <button class="example-cmd" data-cmd="Build a 10-block high cobblestone tower">Build a tower</button>
+                  <button class="example-cmd" data-cmd="Mine diamonds in a 32-block radius">Mine diamonds</button>
+                  <button class="example-cmd" data-cmd="Navigate to coordinates 100, 64, 200">Navigate to coords</button>
+                  <button class="example-cmd" data-cmd="Follow the nearest player">Follow player</button>
+                  <button class="example-cmd" data-cmd="Stop all current tasks">Stop tasks</button>
+                </div>
+              </div>
+            </div>
+            <div class="command-input-area">
+              <input type="text" id="commandInput" class="cmd-input-full" placeholder='Type a command... (e.g., "Build a 10-block high cobblestone tower")' autocomplete="off" />
+              <button id="sendCommand" class="cmd-send-full" title="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="currentTask" class="current-task hidden">
+            <span id="taskAction">—</span>
+            <div class="task-progress-bar">
+              <div id="taskProgress" class="task-progress-fill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Inventory -->
+    <div class="page" id="page-inventory">
+      <div class="inventory-layout">
+        <div class="card">
+          <div class="card-header">
+            <h2>Inventory</h2>
+            <span class="item-count" id="itemCount">0 items</span>
+          </div>
+          <div id="inventoryGrid" class="inventory-grid">
+            <div class="inventory-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              <span>No items in inventory</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Integrations -->
+    <div class="page" id="page-integrations">
+      <div class="integrations-layout">
+        <!-- Discord Card -->
+        <div class="card integration-card">
+          <div class="card-header">
+            <div class="integration-header-icon discord-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+            </div>
+            <h2>Discord Integration</h2>
+          </div>
+          <p class="integration-desc-text">Send bot events and command results to a Discord channel via webhook. Receive commands from Discord to control the bot.</p>
+          <div class="integration-form">
+            <div class="form-group">
+              <label>Webhook URL</label>
+              <input type="url" id="discordWebhookUrl" class="form-input" placeholder="https://discord.com/api/webhooks/..." />
+            </div>
+            <div class="form-group">
+              <label>Channel ID (for receiving commands)</label>
+              <input type="text" id="discordChannelId" class="form-input" placeholder="Channel ID (optional)" />
+            </div>
+            <div class="form-row">
+              <label class="checkbox-label">
+                <input type="checkbox" id="discordNotifyCommands" checked>
+                <span>Notify on commands</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="discordNotifyErrors" checked>
+                <span>Notify on errors</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="discordNotifyTasks">
+                <span>Notify on task complete</span>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button id="discordSave" class="btn btn-primary">Save & Enable</button>
+              <button id="discordTest" class="btn btn-secondary">Test Webhook</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telegram Card -->
+        <div class="card integration-card">
+          <div class="card-header">
+            <div class="integration-header-icon telegram-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            </div>
+            <h2>Telegram Integration</h2>
+          </div>
+          <p class="integration-desc-text">Connect your Telegram bot to receive notifications and send commands to MAAA directly from Telegram.</p>
+          <div class="integration-form">
+            <div class="form-group">
+              <label>Bot Token</label>
+              <input type="password" id="telegramBotToken" class="form-input" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyz" />
+            </div>
+            <div class="form-group">
+              <label>Chat ID</label>
+              <input type="text" id="telegramChatId" class="form-input" placeholder="Your chat or group ID" />
+            </div>
+            <div class="form-row">
+              <label class="checkbox-label">
+                <input type="checkbox" id="telegramNotifyCommands" checked>
+                <span>Notify on commands</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="telegramNotifyErrors" checked>
+                <span>Notify on errors</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="telegramNotifyTasks">
+                <span>Notify on task complete</span>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button id="telegramSave" class="btn btn-primary">Save & Enable</button>
+              <button id="telegramTest" class="btn btn-secondary">Test Connection</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Logs -->
+    <div class="page" id="page-logs">
+      <div class="logs-layout">
+        <div class="card">
+          <div class="card-header">
+            <h2>Activity Log</h2>
+            <div class="log-controls">
+              <select id="logFilter" class="log-filter">
+                <option value="all">All</option>
+                <option value="info">Info</option>
+                <option value="warn">Warnings</option>
+                <option value="error">Errors</option>
+              </select>
+              <button id="clearLogs" class="btn btn-secondary btn-sm">Clear</button>
+            </div>
+          </div>
+          <div id="logContainer" class="log-container-full">
+            <div class="log-item log-info">
+              <span class="log-dot"></span>
+              <span class="log-time-full"></span>
+              <span class="log-msg">Dashboard initialized. Waiting for bot connection...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Settings -->
+    <div class="page" id="page-settings">
+      <div class="settings-layout">
+        <div class="card">
+          <div class="card-header">
+            <h2>Leash Settings</h2>
+          </div>
+          <div class="settings-form">
+            <div class="form-group">
+              <label>Max Distance (blocks)</label>
+              <input type="number" id="leashMaxDistance" class="form-input" value="256" min="1" max="10000" />
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="leashEnabled">
+                <span>Enable Leash</span>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button id="saveLeash" class="btn btn-primary">Save Leash Settings</button>
+              <button id="resetOrigin" class="btn btn-secondary">Reset Origin to Current Position</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Bot Connection</h2>
+          </div>
+          <div class="settings-form">
+            <div class="form-actions">
+              <button id="disconnectBot" class="btn btn-danger">Disconnect Bot</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Keyboard Shortcuts</h2>
+          </div>
+          <div class="shortcuts-list">
+            <div class="shortcut"><kbd>1</kbd><span>Overview</span></div>
+            <div class="shortcut"><kbd>2</kbd><span>Commands</span></div>
+            <div class="shortcut"><kbd>3</kbd><span>Inventory</span></div>
+            <div class="shortcut"><kbd>4</kbd><span>Integrations</span></div>
+            <div class="shortcut"><kbd>5</kbd><span>Logs</span></div>
+            <div class="shortcut"><kbd>6</kbd><span>Settings</span></div>
+            <div class="shortcut"><kbd>/</kbd><span>Focus command input</span></div>
+            <div class="shortcut"><kbd>?</kbd><span>Show shortcuts</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div class="modal-overlay" id="shortcutsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Keyboard Shortcuts</h3>
+        <button class="modal-close" id="closeShortcuts">&times;</button>
+      </div>
+      <div class="shortcuts-modal-list">
+        <div class="shortcut"><kbd>1</kbd><span>Overview</span></div>
+        <div class="shortcut"><kbd>2</kbd><span>Commands</span></div>
+        <div class="shortcut"><kbd>3</kbd><span>Inventory</span></div>
+        <div class="shortcut"><kbd>4</kbd><span>Integrations</span></div>
+        <div class="shortcut"><kbd>5</kbd><span>Logs</span></div>
+        <div class="shortcut"><kbd>6</kbd><span>Settings</span></div>
+        <div class="shortcut"><kbd>/</kbd><span>Focus command input</span></div>
+        <div class="shortcut"><kbd>Esc</kbd><span>Close modal</span></div>
+      </div>
     </div>
   </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="app.js"></script>
