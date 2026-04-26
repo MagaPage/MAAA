@@ -49,7 +49,7 @@ function createRoutes(botManager, skillController, llmInterface, contextGenerato
         maxDistance: leash.maxDistance,
         origin: leash.origin,
         currentDistance: leash.origin
-          ? Math.floor(leash.getDistance(botManager.bot.entity.position))
+          ? Math.floor(leash.getDistance(botManager.bot?.entity?.position || leash.origin))
           : 0,
       },
       currentTask: skillController.getCurrentTask(),
