@@ -107,12 +107,12 @@ class DashboardServer {
     this.app.use('/api/command', commandLimiter)
     this.app.use('/api/integrations/*/test', integrationLimiter)
 
-    this.app.use(this.auth.authMiddleware)
-
     this.app.use(express.static(path.join(__dirname, 'public'), {
       dotfiles: 'deny',
       index: 'index.html',
     }))
+
+    this.app.use('/api', this.auth.authMiddleware)
 
     this.app.disable('x-powered-by')
   }

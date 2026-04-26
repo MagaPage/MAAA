@@ -48,7 +48,9 @@ function createAuth(config, logger) {
       return next()
     }
 
-    if (req.path === '/api/auth/login' || req.path === '/api/auth/status' || req.path === '/api/health') {
+    const p = req.path
+    if (p === '/auth/login' || p === '/auth/status' || p === '/health'
+      || p === '/api/auth/login' || p === '/api/auth/status' || p === '/api/health') {
       return next()
     }
 
