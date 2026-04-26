@@ -69,13 +69,22 @@ class Leash {
         new GoalNear(this.origin.x, this.origin.y, this.origin.z, 5)
       )
 
+      const cleanup = () => {
+        this._returning = false
+        this.bot.removeListener('move', checkReturn)
+        this.bot.removeListener('death', cleanup)
+        clearTimeout(timeout)
+      }
+
       const checkReturn = () => {
-        if (this.isWithinBounds(this.bot.entity.position)) {
-          this._returning = false
-          this.bot.removeListener('move', checkReturn)
+        if (this.bot.entity && this.isWithinBounds(this.bot.entity.position)) {
+          cleanup()
         }
       }
+
+      const timeout = setTimeout(cleanup, 30000)
       this.bot.on('move', checkReturn)
+      this.bot.once('death', cleanup)
     }
   }
 }

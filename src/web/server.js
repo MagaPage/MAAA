@@ -161,6 +161,11 @@ class DashboardServer {
       this.io.emit('log', { type: 'warn', message: `Disconnected: ${safeReason}` })
     })
 
+    botManager.on('error', (err) => {
+      this.logger.error(`Bot error: ${err.message}`)
+      this.io.emit('log', { type: 'error', message: `Bot error: ${err.message}` })
+    })
+
     skillController.on('taskStart', (task) => {
       this.io.emit('taskStart', task)
       this.io.emit('log', { type: 'info', message: `Starting task: ${task.action}` })
