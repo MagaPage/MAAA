@@ -4,8 +4,59 @@ const MAX_COMMAND_LENGTH = 500
 const MAX_WEBHOOK_URL_LENGTH = 200
 const MAX_TOKEN_LENGTH = 100
 
+/**
+ * Create all API routes for the MAAA dashboard.
+ * @param {object} botManager - BotManager instance
+ * @param {object} skillController - SkillController instance
+ * @param {object} llmInterface - LLMInterface instance
+ * @param {object} contextGenerator - ContextGenerator instance
+ * @param {object} leash - Leash instance
+ * @param {object} integrationManager - IntegrationManager instance
+ * @returns {express.Router} Configured router
+ */
 function createRoutes(botManager, skillController, llmInterface, contextGenerator, leash, integrationManager) {
   const router = express.Router()
+
+  router.get('/health', (_req, res) => {
+    const botConnected = !!botManager.bot
+    res.json({
+      status: 'ok',
+      uptime: Math.floor(process.uptime()),
+      bot: botConnected ? 'connected' : 'disconnected',
+      memory: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024),
+    })
+  })
+
+  router.get('/integrations/status', (_req, res) => {
+    if (!integrationManager) {
+      return res.status(503).json({ error: 'Integration manager not available' })
+    }
+    res.json(integrationManager.getStatus())
+  })
+
+  router.post('/schematic', async (req, res) => {
+    try {
+      const { schematic } = req.body
+      if (!schematic || typeof schematic !== 'object') {
+        return res.status(400).json({ error: 'Schematic data is required' })
+      }
+
+      if (!botManager.bot) {
+        return res.status(503).json({ error: 'Bot is not connected' })
+      }
+
+      const command = {
+        success: true,
+        action: 'build',
+        params: { schematic, type: 'schematic' },
+      }
+
+      const result = await skillController.execute(command)
+      res.json({ success: true, result })
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to build schematic' })
+    }
+  })
 
   router.post('/command', async (req, res) => {
     try {

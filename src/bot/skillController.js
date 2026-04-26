@@ -1,6 +1,15 @@
 const EventEmitter = require('events')
 
 class SkillController extends EventEmitter {
+  /**
+   * Orchestrate command execution across builder, miner, and navigator engines.
+   * Supports task queuing and checkpoint/resume for build operations.
+   * @param {object} bot - Mineflayer bot instance
+   * @param {object} builder - Builder engine
+   * @param {object} miner - Miner engine
+   * @param {object} navigator - Navigator engine
+   * @param {object} logger - Winston logger
+   */
   constructor(bot, builder, miner, navigator, logger) {
     super()
     this.bot = bot
@@ -10,15 +19,39 @@ class SkillController extends EventEmitter {
     this.logger = logger
     this.currentTask = null
     this.history = []
+    this.taskQueue = []
+    this._lastCheckpoint = null
   }
 
-  async execute(command) {
+  /**
+   * Execute a parsed LLM command. Supports priority queueing.
+   * @param {object} command - Parsed command with action and params
+   * @param {object} [options] - Execution options
+   * @param {number} [options.priority=0] - Priority level (higher = first)
+   * @returns {Promise<object>} Execution result
+   */
+  async execute(command, options = {}) {
     if (!command.success) {
       const error = { action: 'error', error: command.error }
       this.emit('taskError', error)
       return error
     }
 
+    if (this.currentTask && options.priority === undefined) {
+      this.taskQueue.push({ command, options })
+      this.emit('taskQueued', { action: command.action, queuePosition: this.taskQueue.length })
+      return { queued: true, position: this.taskQueue.length }
+    }
+
+    return this._executeTask(command)
+  }
+
+  /**
+   * Internal task execution.
+   * @param {object} command - Parsed command
+   * @returns {Promise<object>} Result
+   */
+  async _executeTask(command) {
     const { action, params } = command
     this.currentTask = { action, params, startTime: Date.now() }
     this.emit('taskStart', this.currentTask)
@@ -69,6 +102,7 @@ class SkillController extends EventEmitter {
       this.currentTask = null
 
       this.emit('taskComplete', entry)
+      this._processQueue()
       return result
     } catch (err) {
       const error = {
@@ -79,10 +113,29 @@ class SkillController extends EventEmitter {
       this.history.push(error)
       this.currentTask = null
       this.emit('taskError', error)
+      this._processQueue()
       throw err
     }
   }
 
+  /**
+   * Process the next task in the queue if available.
+   */
+  _processQueue() {
+    if (this.taskQueue.length === 0) return
+
+    this.taskQueue.sort((a, b) => (b.options.priority || 0) - (a.options.priority || 0))
+    const next = this.taskQueue.shift()
+    this._executeTask(next.command).catch((err) => {
+      this.logger.error(`Queued task failed: ${err.message}`)
+    })
+  }
+
+  /**
+   * Handle build commands with checkpoint support.
+   * @param {object} params - Build parameters
+   * @returns {Promise<object>} Build result
+   */
   async _handleBuild(params) {
     const origin = this.bot.entity.position.clone()
 
@@ -104,22 +157,63 @@ class SkillController extends EventEmitter {
       message: `Building ${params.type} with ${placements.length} blocks`,
     })
 
-    return await this.builder.buildSchematic(placements, origin)
+    this._lastCheckpoint = {
+      action: 'build',
+      params,
+      origin: { x: origin.x, y: origin.y, z: origin.z },
+      totalPlacements: placements.length,
+      timestamp: new Date().toISOString(),
+    }
+
+    const result = await this.builder.buildSchematic(placements, origin)
+
+    if (result.failed > 0) {
+      this._lastCheckpoint.failedBlocks = result.errors
+      this._lastCheckpoint.placed = result.placed
+    } else {
+      this._lastCheckpoint = null
+    }
+
+    return result
   }
 
+  /**
+   * Handle mine commands with progress tracking.
+   * @param {object} params - Mine parameters
+   * @returns {Promise<object>} Mining result
+   */
   async _handleMine(params) {
-    return await this.miner.autoMine({
+    this._lastCheckpoint = {
+      action: 'mine',
+      params,
+      timestamp: new Date().toISOString(),
+    }
+
+    const result = await this.miner.autoMine({
       radius: params.radius || 32,
       oreTypes: params.oreTypes,
       maxClusters: params.maxClusters || 10,
     })
+
+    this._lastCheckpoint = null
+    return result
   }
 
+  /**
+   * Handle navigate commands.
+   * @param {object} params - Navigation parameters
+   * @returns {Promise<object>} Navigation result
+   */
   async _handleNavigate(params) {
     await this.navigator.goto(params.x, params.y, params.z, params.range || 1)
     return { success: true, destination: { x: params.x, y: params.y, z: params.z } }
   }
 
+  /**
+   * Handle follow commands.
+   * @param {object} params - Follow parameters
+   * @returns {Promise<object>} Follow result
+   */
   async _handleFollow(params) {
     const player = this.bot.players[params.target]
     if (!player?.entity) {
@@ -130,17 +224,34 @@ class SkillController extends EventEmitter {
     return { success: true, following: params.target }
   }
 
+  /**
+   * Handle chat commands.
+   * @param {object} params - Chat parameters
+   * @returns {object} Chat result
+   */
   async _handleChat(params) {
     this.bot.chat(params.message)
     return { success: true, message: params.message }
   }
 
+  /**
+   * Stop all current activities including queued tasks.
+   * @returns {object} Stop result
+   */
   _handleStop() {
     this.navigator.stop()
     this.miner.stopMining()
-    return { success: true, message: 'All activities stopped' }
+    const cleared = this.taskQueue.length
+    this.taskQueue = []
+    this._lastCheckpoint = null
+    return { success: true, message: 'All activities stopped', clearedQueue: cleared }
   }
 
+  /**
+   * Handle scan commands.
+   * @param {object} params - Scan parameters
+   * @returns {object} Scan results with cluster info
+   */
   async _handleScan(params) {
     const clusters = this.miner.scanOres(params.radius || 32, params.oreTypes)
     return {
@@ -158,6 +269,11 @@ class SkillController extends EventEmitter {
     }
   }
 
+  /**
+   * Handle equip commands.
+   * @param {object} params - Equip parameters
+   * @returns {Promise<object>} Equip result
+   */
   async _handleEquip(params) {
     const item = this.bot.inventory.items().find(i => i.name === params.item)
     if (!item) {
@@ -168,6 +284,11 @@ class SkillController extends EventEmitter {
     return { success: true, equipped: params.item }
   }
 
+  /**
+   * Handle craft commands.
+   * @param {object} params - Craft parameters
+   * @returns {Promise<object>} Craft result
+   */
   async _handleCraft(params) {
     const mcData = require('minecraft-data')(this.bot.version)
     const itemData = mcData.itemsByName[params.item]
@@ -180,16 +301,45 @@ class SkillController extends EventEmitter {
       return { success: false, error: `No recipe found for ${params.item}` }
     }
 
-    await this.bot.craft(recipes[0], params.count || 1)
-    return { success: true, crafted: params.item, count: params.count || 1 }
+    const count = params.count || 1
+    await this.bot.craft(recipes[0], count)
+    return { success: true, crafted: params.item, count }
   }
 
-  getHistory() {
-    return this.history
-  }
-
+  /**
+   * Get the current task info.
+   * @returns {object|null} Current task or null
+   */
   getCurrentTask() {
     return this.currentTask
+  }
+
+  /**
+   * Get the last checkpoint for resumable operations.
+   * @returns {object|null} Checkpoint data or null
+   */
+  getLastCheckpoint() {
+    return this._lastCheckpoint
+  }
+
+  /**
+   * Get the task queue status.
+   * @returns {Array<object>} Queued tasks
+   */
+  getQueue() {
+    return this.taskQueue.map((t, i) => ({
+      position: i + 1,
+      action: t.command.action,
+      priority: t.options.priority || 0,
+    }))
+  }
+
+  /**
+   * Get command execution history.
+   * @returns {Array<object>} History entries
+   */
+  getHistory() {
+    return this.history
   }
 }
 

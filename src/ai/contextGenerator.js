@@ -1,8 +1,17 @@
 class ContextGenerator {
+  /**
+   * Generate human-readable context strings from bot state for LLM prompts.
+   * @param {object} bot - Mineflayer bot instance
+   */
   constructor(bot) {
     this.bot = bot
   }
 
+  /**
+   * Generate a full context string including position, vitals, inventory,
+   * nearby entities, nearby blocks, and environment.
+   * @returns {string} Formatted context for LLM system prompt
+   */
   generate() {
     const sections = [
       this._positionSection(),
@@ -16,6 +25,10 @@ class ContextGenerator {
     return sections.filter(Boolean).join('\n\n')
   }
 
+  /**
+   * Generate position and orientation section.
+   * @returns {string} Position info
+   */
   _positionSection() {
     const pos = this.bot.entity?.position
     if (!pos) return 'Position: Unknown'
@@ -28,6 +41,10 @@ class ContextGenerator {
     ].join('\n')
   }
 
+  /**
+   * Generate vitals section (health, food, saturation, XP).
+   * @returns {string} Vitals info
+   */
   _vitalSection() {
     return [
       '## Vitals',
@@ -38,6 +55,10 @@ class ContextGenerator {
     ].join('\n')
   }
 
+  /**
+   * Generate inventory summary section.
+   * @returns {string} Inventory listing
+   */
   _inventorySection() {
     const items = this.bot.inventory?.items() || []
     if (items.length === 0) return '## Inventory\nEmpty'
@@ -57,6 +78,10 @@ class ContextGenerator {
     return ['## Inventory', ...lines].join('\n')
   }
 
+  /**
+   * Generate nearby entities section (within 16 blocks).
+   * @returns {string} Entity listing
+   */
   _nearbyEntitiesSection() {
     const entities = Object.values(this.bot.entities || {})
     const nearby = entities
@@ -83,6 +108,10 @@ class ContextGenerator {
     return ['## Nearby Entities', ...lines].join('\n')
   }
 
+  /**
+   * Generate nearby blocks section (8-block radius, top 15 by count).
+   * @returns {string|null} Block counts or null if no position
+   */
   _nearbyBlocksSection() {
     const pos = this.bot.entity?.position
     if (!pos) return null
@@ -109,6 +138,10 @@ class ContextGenerator {
     return ['## Nearby Blocks (8-block radius)', ...sorted].join('\n')
   }
 
+  /**
+   * Generate environment section (time, weather, dimension, difficulty).
+   * @returns {string} Environment info
+   */
   _environmentSection() {
     const timeOfDay = this.bot.time?.timeOfDay || 0
     let timeStr = 'Day'

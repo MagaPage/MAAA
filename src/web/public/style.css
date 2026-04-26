@@ -1219,6 +1219,53 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
   .modal { min-width: auto; margin: 16px; }
 }
 
+/* ========== Schematic Upload ========== */
+.file-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+}
+
+.file-upload-area:hover,
+.file-upload-area.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.file-upload-area p { margin: 8px 0 0; font-size: 0.85rem; }
+
+.schematic-info {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-input);
+  border-radius: var(--radius-xs);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.schematic-info.hidden { display: none; }
+
+/* ========== Login ========== */
+.login-form { padding: 24px; }
+.login-error { color: var(--danger); font-size: 0.85rem; margin-top: 12px; }
+.login-error.hidden { display: none; }
+
+/* ========== Integrations Mobile Fix ========== */
+@media (max-width: 600px) {
+  .integration-card { padding: 16px; }
+  .integration-card .card-header { flex-direction: column; gap: 8px; }
+  .integration-card .form-group { margin-bottom: 12px; }
+  .integration-card .form-input { font-size: 14px; }
+  .integration-card .form-actions { flex-direction: column; gap: 8px; }
+  .integration-card .btn { width: 100%; }
+  .toggle-wrapper { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+
 /* ========== Current Task ========== */
 .current-task { margin-top: 12px; }
 .current-task.hidden { display: none; }

@@ -449,6 +449,30 @@
 
         <div class="card">
           <div class="card-header">
+            <h2>Schematic Upload</h2>
+          </div>
+          <div class="settings-form">
+            <div class="form-group">
+              <label>Upload a schematic JSON file for building</label>
+              <div class="file-upload-area" id="schematicDropZone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p>Drop schematic JSON here or click to browse</p>
+                <input type="file" id="schematicFile" accept=".json" hidden />
+              </div>
+              <div id="schematicInfo" class="schematic-info hidden"></div>
+            </div>
+            <div class="form-actions">
+              <button id="uploadSchematic" class="btn btn-primary" disabled>Upload Schematic</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
             <h2>Keyboard Shortcuts</h2>
           </div>
           <div class="shortcuts-list">
@@ -482,6 +506,25 @@
         <div class="shortcut"><kbd>6</kbd><span>Settings</span></div>
         <div class="shortcut"><kbd>/</kbd><span>Focus command input</span></div>
         <div class="shortcut"><kbd>Esc</kbd><span>Close modal</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal-overlay" id="loginModal" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Dashboard Login</h3>
+      </div>
+      <div class="login-form">
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="Enter dashboard password" />
+        </div>
+        <div class="form-actions">
+          <button id="loginSubmit" class="btn btn-primary" style="width:100%">Login</button>
+        </div>
+        <p id="loginError" class="login-error hidden"></p>
       </div>
     </div>
   </div>

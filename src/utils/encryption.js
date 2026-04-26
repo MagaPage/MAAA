@@ -4,10 +4,22 @@ const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 16
 const SALT_LENGTH = 16
 
+/**
+ * Derive a 32-byte key from a password and salt using scrypt.
+ * @param {string} password - Input key material
+ * @param {Buffer} salt - Salt buffer
+ * @returns {Buffer} Derived key
+ */
 function deriveKey(password, salt) {
   return crypto.scryptSync(password, salt, 32)
 }
 
+/**
+ * Encrypt plaintext using AES-256-GCM with random salt and IV.
+ * @param {string} plaintext - Data to encrypt
+ * @param {string} keyString - Encryption key
+ * @returns {object} Encrypted payload { salt, iv, authTag, ciphertext }
+ */
 function encrypt(plaintext, keyString) {
   const salt = crypto.randomBytes(SALT_LENGTH)
   const key = deriveKey(keyString, salt)
@@ -26,6 +38,12 @@ function encrypt(plaintext, keyString) {
   }
 }
 
+/**
+ * Decrypt an AES-256-GCM encrypted payload.
+ * @param {object} encrypted - Payload { salt, iv, authTag, ciphertext }
+ * @param {string} keyString - Encryption key
+ * @returns {string} Decrypted plaintext
+ */
 function decrypt(encrypted, keyString) {
   const salt = encrypted.salt ? Buffer.from(encrypted.salt, 'hex') : Buffer.from('maaa-salt')
   const key = deriveKey(keyString, salt)

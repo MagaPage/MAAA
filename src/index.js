@@ -56,7 +56,7 @@ async function main() {
 
   // Step 4: Initialize AI
   const contextGenerator = new ContextGenerator(bot)
-  const llmInterface = new LLMInterface(config.openai.apiKey, config.openai.model)
+  const llmInterface = new LLMInterface(config.openai.apiKey, config.openai.model, config.openai.maxContextTokens)
 
   // Step 5: Initialize Skill Controller
   const skillController = new SkillController(bot, builder, miner, navigator, logger)

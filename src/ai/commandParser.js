@@ -42,6 +42,12 @@ const ACTION_SCHEMAS = {
   },
 }
 
+/**
+ * Parse an LLM response string into a structured command object.
+ * Handles JSON in code blocks, raw JSON, or wrapped in text.
+ * @param {string} llmResponse - Raw LLM output
+ * @returns {object} Parsed command with success, action, params, or error
+ */
 function parseCommand(llmResponse) {
   let jsonStr = llmResponse
 
@@ -99,6 +105,12 @@ function parseCommand(llmResponse) {
   }
 }
 
+/**
+ * Validate parameters for a given action against its schema.
+ * @param {string} action - Action type
+ * @param {object} params - Parameters to validate
+ * @returns {object} { valid: boolean, error?: string }
+ */
 function validateParams(action, params) {
   const schema = ACTION_SCHEMAS[action]
   if (!schema) {

@@ -13,6 +13,12 @@ const DEFAULT_ORE_TYPES = [
 ]
 
 class Miner {
+  /**
+   * Ore scanning and automated mining engine.
+   * @param {object} bot - Mineflayer bot instance
+   * @param {object} navigator - Navigator engine
+   * @param {object} logger - Winston logger
+   */
   constructor(bot, navigator, logger) {
     this.bot = bot
     this.navigator = navigator
@@ -20,6 +26,12 @@ class Miner {
     this.mining = false
   }
 
+  /**
+   * Scan for ore blocks within a radius and cluster them.
+   * @param {number} [radius=32] - Search radius in blocks
+   * @param {Array<string>} [oreTypes] - Ore block names to search for
+   * @returns {Array<object>} Clusters sorted by distance
+   */
   scanOres(radius = 32, oreTypes = DEFAULT_ORE_TYPES) {
     const mcData = require('minecraft-data')(this.bot.version)
     const oreBlockIds = oreTypes
@@ -96,6 +108,11 @@ class Miner {
     return new Vec3(x / len, y / len, z / len)
   }
 
+  /**
+   * Navigate to and mine all blocks in a cluster.
+   * @param {object} cluster - Cluster with blocks array
+   * @returns {Promise<object>} Result with mined/failed counts
+   */
   async mineCluster(cluster) {
     const mined = []
     const failed = []
@@ -131,6 +148,14 @@ class Miner {
     return { mined: mined.length, failed: failed.length, details: { mined, failed } }
   }
 
+  /**
+   * Automatically scan and mine ore clusters until done or stopped.
+   * @param {object} [options] - Mining options
+   * @param {number} [options.radius=32] - Scan radius
+   * @param {Array<string>} [options.oreTypes] - Ore types to mine
+   * @param {number} [options.maxClusters=10] - Max clusters to process
+   * @returns {Promise<object>} Result with cluster/block counts
+   */
   async autoMine(options = {}) {
     const {
       radius = 32,
@@ -165,6 +190,9 @@ class Miner {
     return { clustersProcessed, totalMined }
   }
 
+  /**
+   * Stop the current mining operation.
+   */
   stopMining() {
     this.mining = false
     this.navigator.stop()

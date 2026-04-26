@@ -3,6 +3,10 @@ const EventEmitter = require('events')
 const { TokenCache } = require('./tokenCache')
 
 class Authenticator extends EventEmitter {
+  /**
+   * Microsoft OAuth2 authentication using device code flow.
+   * @param {object} config - App config with tokenCacheDir and security.encryptionKey
+   */
   constructor(config) {
     super()
     this.config = config
@@ -13,6 +17,11 @@ class Authenticator extends EventEmitter {
     this.authflow = null
   }
 
+  /**
+   * Authenticate via Microsoft device code flow.
+   * Emits 'deviceCode' with { userCode, verificationUri, message }.
+   * @returns {Promise<object>} { token, profile, entitlements }
+   */
   async authenticate() {
     const username = 'maaa-bot'
 
@@ -44,6 +53,10 @@ class Authenticator extends EventEmitter {
     }
   }
 
+  /**
+   * Authenticate using cached tokens if valid, otherwise perform fresh auth.
+   * @returns {Promise<object>} { token, profile, entitlements, expiresAt }
+   */
   async authenticateWithCache() {
     const username = 'maaa-bot'
     const cached = await this.tokenCache.load(username)

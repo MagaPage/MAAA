@@ -48,12 +48,25 @@ Rules:
 - If the command is unclear, use "chat" action to ask for clarification`
 
 class LLMInterface {
-  constructor(apiKey, model = 'gpt-4o') {
+  /**
+   * Interface with OpenAI GPT models for command interpretation.
+   * @param {string} apiKey - OpenAI API key
+   * @param {string} [model='gpt-4o'] - Model name
+   * @param {number} [maxContextTokens=8000] - Max token budget for conversation history
+   */
+  constructor(apiKey, model = 'gpt-4o', maxContextTokens = 8000) {
     this.client = new OpenAI({ apiKey })
     this.model = model
     this.history = []
+    this.maxContextTokens = maxContextTokens
   }
 
+  /**
+   * Process a single command without history.
+   * @param {string} userMessage - Natural language command
+   * @param {string} botContext - Bot state context
+   * @returns {Promise<object>} Parsed command result
+   */
   async processCommand(userMessage, botContext) {
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -72,8 +85,15 @@ class LLMInterface {
     return parseCommand(content)
   }
 
+  /**
+   * Process a command with conversation history, trimming to stay within token budget.
+   * @param {string} userMessage - Natural language command
+   * @param {string} botContext - Bot state context
+   * @returns {Promise<object>} Parsed command result
+   */
   async processWithHistory(userMessage, botContext) {
     this.history.push({ role: 'user', content: userMessage })
+    this._trimHistory()
 
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -90,14 +110,30 @@ class LLMInterface {
 
     const content = response.choices[0]?.message?.content || ''
     this.history.push({ role: 'assistant', content })
-
-    if (this.history.length > 20) {
-      this.history = this.history.slice(-10)
-    }
+    this._trimHistory()
 
     return parseCommand(content)
   }
 
+  /**
+   * Trim conversation history to stay within the token budget.
+   * Estimates ~4 chars per token (conservative for English text).
+   */
+  _trimHistory() {
+    const CHARS_PER_TOKEN = 4
+    const maxChars = this.maxContextTokens * CHARS_PER_TOKEN
+
+    let totalChars = this.history.reduce((sum, msg) => sum + msg.content.length, 0)
+
+    while (totalChars > maxChars && this.history.length > 2) {
+      const removed = this.history.shift()
+      totalChars -= removed.content.length
+    }
+  }
+
+  /**
+   * Clear conversation history.
+   */
   resetHistory() {
     this.history = []
   }

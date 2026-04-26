@@ -1,7 +1,75 @@
 /* eslint-env browser */
 /* global io */
 
-const socket = io()
+// ========== Auth ==========
+let authToken = localStorage.getItem('maaa-auth-token') || ''
+
+function getAuthHeaders() {
+  const headers = { 'Content-Type': 'application/json' }
+  if (authToken) headers['X-Auth-Token'] = authToken
+  return headers
+}
+
+async function checkAuth() {
+  try {
+    const res = await fetch('/api/auth/status')
+    const data = await res.json()
+    if (!data.authRequired) return true
+
+    if (authToken) {
+      const test = await fetch('/api/status', { headers: { 'X-Auth-Token': authToken } })
+      if (test.ok) return true
+      localStorage.removeItem('maaa-auth-token')
+      authToken = ''
+    }
+
+    return new Promise((resolve) => {
+      const loginModal = document.getElementById('loginModal')
+      const loginPassword = document.getElementById('loginPassword')
+      const loginSubmit = document.getElementById('loginSubmit')
+      const loginError = document.getElementById('loginError')
+
+      loginModal.style.display = 'flex'
+      loginPassword.focus()
+
+      async function doLogin() {
+        const pw = loginPassword.value
+        if (!pw) return
+
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pw }),
+          })
+          const data = await res.json()
+          if (data.success && data.token) {
+            authToken = data.token
+            localStorage.setItem('maaa-auth-token', authToken)
+            loginModal.style.display = 'none'
+            loginError.classList.add('hidden')
+            resolve(true)
+          } else {
+            loginError.textContent = data.error || 'Invalid password'
+            loginError.classList.remove('hidden')
+          }
+        } catch {
+          loginError.textContent = 'Network error'
+          loginError.classList.remove('hidden')
+        }
+      }
+
+      loginSubmit.addEventListener('click', doLogin)
+      loginPassword.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') doLogin()
+      })
+    })
+  } catch {
+    return true
+  }
+}
+
+const socket = io({ auth: { token: authToken } })
 
 // ========== DOM Elements ==========
 const el = {
@@ -312,7 +380,7 @@ async function sendCommand(message, inputEl, sendBtn) {
   try {
     const response = await fetch('/api/command', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ message }),
     })
 
@@ -459,7 +527,7 @@ socket.on('log', (data) => {
 // ========== Status Polling ==========
 async function refreshStatus() {
   try {
-    const response = await fetch('/api/status')
+    const response = await fetch('/api/status', { headers: getAuthHeaders() })
     if (response.ok) {
       const state = await response.json()
       updateStatus(state)
@@ -483,7 +551,7 @@ el.saveLeash.addEventListener('click', async () => {
   try {
     const response = await fetch('/api/leash', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         maxDistance: parseInt(el.leashMaxDistance.value, 10),
         enabled: el.leashEnabled.checked,
@@ -503,7 +571,7 @@ el.resetOrigin.addEventListener('click', async () => {
   try {
     const response = await fetch('/api/leash', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ override: true }),
     })
     if (response.ok) {
@@ -516,7 +584,7 @@ el.resetOrigin.addEventListener('click', async () => {
 
 el.disconnectBot.addEventListener('click', async () => {
   try {
-    const response = await fetch('/api/disconnect', { method: 'POST' })
+    const response = await fetch('/api/disconnect', { method: 'POST', headers: getAuthHeaders() })
     const data = await response.json()
     showToast(data.message || data.error, response.ok ? 'info' : 'error')
   } catch {
@@ -578,7 +646,7 @@ el.discordSave.addEventListener('click', async () => {
   try {
     const response = await fetch('/api/integrations/discord', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(config),
     })
 
@@ -616,7 +684,7 @@ el.discordTest.addEventListener('click', async () => {
   try {
     const response = await fetch('/api/integrations/discord/test', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ webhookUrl }),
     })
 
@@ -658,7 +726,7 @@ el.telegramSave.addEventListener('click', async () => {
   try {
     const response = await fetch('/api/integrations/telegram', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(config),
     })
 
@@ -697,7 +765,7 @@ el.telegramTest.addEventListener('click', async () => {
   try {
     const response = await fetch('/api/integrations/telegram/test', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ botToken, chatId }),
     })
 
@@ -712,3 +780,102 @@ el.telegramTest.addEventListener('click', async () => {
 })
 
 loadIntegrationSettings()
+
+// ========== Schematic Upload ==========
+const schematicDropZone = document.getElementById('schematicDropZone')
+const schematicFile = document.getElementById('schematicFile')
+const schematicInfo = document.getElementById('schematicInfo')
+const uploadSchematic = document.getElementById('uploadSchematic')
+let pendingSchematic = null
+
+if (schematicDropZone) {
+  schematicDropZone.addEventListener('click', () => schematicFile.click())
+
+  schematicDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    schematicDropZone.classList.add('drag-over')
+  })
+
+  schematicDropZone.addEventListener('dragleave', () => {
+    schematicDropZone.classList.remove('drag-over')
+  })
+
+  schematicDropZone.addEventListener('drop', (e) => {
+    e.preventDefault()
+    schematicDropZone.classList.remove('drag-over')
+    const file = e.dataTransfer.files[0]
+    if (file) handleSchematicFile(file)
+  })
+
+  schematicFile.addEventListener('change', () => {
+    if (schematicFile.files[0]) handleSchematicFile(schematicFile.files[0])
+  })
+}
+
+function handleSchematicFile(file) {
+  if (!file.name.endsWith('.json')) {
+    showToast('Only JSON schematic files are supported', 'error')
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('File too large (max 5MB)', 'error')
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result)
+      let blockCount = 0
+      if (data.blocks) blockCount = data.blocks.length
+      else if (data.structure) {
+        for (const layer of data.structure) {
+          for (const row of layer) {
+            for (const cell of row) {
+              if (cell > 0) blockCount++
+            }
+          }
+        }
+      }
+      pendingSchematic = data
+      schematicInfo.classList.remove('hidden')
+      schematicInfo.textContent = `${file.name} — ${blockCount} blocks`
+      uploadSchematic.disabled = false
+    } catch {
+      showToast('Invalid JSON file', 'error')
+    }
+  }
+  reader.readAsText(file)
+}
+
+if (uploadSchematic) {
+  uploadSchematic.addEventListener('click', async () => {
+    if (!pendingSchematic) return
+
+    try {
+      const response = await fetch('/api/schematic', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ schematic: pendingSchematic }),
+      })
+
+      if (response.ok) {
+        showToast('Schematic uploaded and build started', 'success')
+        pendingSchematic = null
+        schematicInfo.classList.add('hidden')
+        uploadSchematic.disabled = true
+      } else {
+        const data = await response.json()
+        showToast(data.error || 'Upload failed', 'error')
+      }
+    } catch {
+      showToast('Network error', 'error')
+    }
+  })
+}
+
+// ========== Init ==========
+checkAuth().then(() => {
+  refreshStatus()
+})

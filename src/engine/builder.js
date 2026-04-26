@@ -1,12 +1,23 @@
 const Vec3 = require('vec3').Vec3
 
 class Builder {
+  /**
+   * Block placement engine for procedural and schematic builds.
+   * @param {object} bot - Mineflayer bot instance
+   * @param {object} navigator - Navigator engine
+   * @param {object} logger - Winston logger
+   */
   constructor(bot, navigator, logger) {
     this.bot = bot
     this.navigator = navigator
     this.logger = logger
   }
 
+  /**
+   * Parse a schematic JSON into an array of block placements.
+   * @param {object} schematic - Schematic with blocks array or palette+structure
+   * @returns {Array<object>} Sorted placements with pos and blockName
+   */
   parseSchematic(schematic) {
     const placements = []
 
@@ -37,6 +48,12 @@ class Builder {
     return placements.sort((a, b) => a.pos.y - b.pos.y || a.pos.z - b.pos.z || a.pos.x - b.pos.x)
   }
 
+  /**
+   * Generate procedural block placements for a structure type.
+   * @param {string} type - Structure type (tower, wall, cube, floor, pyramid)
+   * @param {object} params - Build parameters (block, height, width, size, length)
+   * @returns {Array<object>} Sorted placements
+   */
   generateProcedural(type, params) {
     const placements = []
     const block = params.block || 'cobblestone'
@@ -105,6 +122,12 @@ class Builder {
     return placements.sort((a, b) => a.pos.y - b.pos.y || a.pos.z - b.pos.z || a.pos.x - b.pos.x)
   }
 
+  /**
+   * Build a schematic or placement array in the game world.
+   * @param {object|Array} schematic - Schematic object or pre-parsed placements
+   * @param {object} origin - World position to build relative to
+   * @returns {Promise<object>} Result with total, placed, failed counts
+   */
   async buildSchematic(schematic, origin) {
     const placements = Array.isArray(schematic) ? schematic : this.parseSchematic(schematic)
     const total = placements.length

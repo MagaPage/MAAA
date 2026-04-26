@@ -1,18 +1,27 @@
 const express = require('express')
 const http = require('http')
+const https = require('https')
+const fs = require('fs')
 const { Server: SocketServer } = require('socket.io')
 const path = require('path')
 const helmet = require('helmet')
-const rateLimit = require('express-rate-limit')
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit')
 const { createRoutes } = require('./routes')
 const { IntegrationManager } = require('./integrations')
+const { createAuth } = require('./auth')
 
 class DashboardServer {
+  /**
+   * Create a new DashboardServer instance.
+   * @param {object} config - Application configuration
+   * @param {object} logger - Winston logger instance
+   */
   constructor(config, logger) {
     this.config = config
     this.logger = logger
     this.app = express()
-    this.server = http.createServer(this.app)
+
+    this.server = this._createServer()
     this.io = new SocketServer(this.server, {
       cors: {
         origin: config.web?.allowedOrigins || false,
@@ -21,9 +30,33 @@ class DashboardServer {
       pingTimeout: 20000,
       pingInterval: 25000,
     })
-    this.integrationManager = new IntegrationManager(logger)
+    this.integrationManager = new IntegrationManager(logger, config)
+    this.auth = createAuth(config, logger)
 
     this._setupMiddleware()
+  }
+
+  /**
+   * Create HTTP or HTTPS server based on configuration.
+   * If HTTPS_KEY and HTTPS_CERT env vars point to valid files, uses HTTPS.
+   * @returns {http.Server|https.Server} The server instance
+   */
+  _createServer() {
+    const keyPath = this.config.web?.httpsKey
+    const certPath = this.config.web?.httpsCert
+
+    if (keyPath && certPath) {
+      try {
+        const key = fs.readFileSync(keyPath)
+        const cert = fs.readFileSync(certPath)
+        this.logger.info('HTTPS enabled with provided certificate')
+        return https.createServer({ key, cert }, this.app)
+      } catch (err) {
+        this.logger.warn(`Failed to load TLS certificates: ${err.message}. Falling back to HTTP.`)
+      }
+    }
+
+    return http.createServer(this.app)
   }
 
   _setupMiddleware() {
@@ -48,6 +81,7 @@ class DashboardServer {
       max: 60,
       standardHeaders: true,
       legacyHeaders: false,
+      keyGenerator: ipKeyGenerator,
       message: { error: 'Too many requests, please try again later' },
     })
 
@@ -56,6 +90,7 @@ class DashboardServer {
       max: 10,
       standardHeaders: true,
       legacyHeaders: false,
+      keyGenerator: ipKeyGenerator,
       message: { error: 'Command rate limit exceeded, please wait' },
     })
 
@@ -64,12 +99,15 @@ class DashboardServer {
       max: 5,
       standardHeaders: true,
       legacyHeaders: false,
+      keyGenerator: ipKeyGenerator,
       message: { error: 'Integration test rate limit exceeded' },
     })
 
     this.app.use('/api', apiLimiter)
     this.app.use('/api/command', commandLimiter)
     this.app.use('/api/integrations/*/test', integrationLimiter)
+
+    this.app.use(this.auth.authMiddleware)
 
     this.app.use(express.static(path.join(__dirname, 'public'), {
       dotfiles: 'deny',
@@ -79,19 +117,36 @@ class DashboardServer {
     this.app.disable('x-powered-by')
   }
 
+  /**
+   * Start listening on the configured port.
+   * Binds to localhost only if BIND_LOCALHOST is set.
+   * @param {number} [port] - Override port
+   * @returns {Promise<void>}
+   */
   async start(port) {
     const listenPort = port || this.config.web.port
+    const host = this.config.web?.bindLocalhost ? '127.0.0.1' : '0.0.0.0'
+    const protocol = this.config.web?.httpsKey ? 'https' : 'http'
 
     return new Promise((resolve) => {
-      this.server.listen(listenPort, () => {
-        this.logger.info(`Dashboard running at http://localhost:${listenPort}`)
+      this.server.listen(listenPort, host, () => {
+        this.logger.info(`Dashboard running at ${protocol}://${host === '0.0.0.0' ? 'localhost' : host}:${listenPort}`)
         resolve()
       })
     })
   }
 
+  /**
+   * Mount API routes and error handlers.
+   * @param {object} botManager - BotManager instance
+   * @param {object} skillController - SkillController instance
+   * @param {object} llmInterface - LLMInterface instance
+   * @param {object} contextGenerator - ContextGenerator instance
+   * @param {object} leash - Leash instance
+   */
   mountRoutes(botManager, skillController, llmInterface, contextGenerator, leash) {
     const routes = createRoutes(botManager, skillController, llmInterface, contextGenerator, leash, this.integrationManager)
+    this.auth.mountAuthRoutes(routes)
     this.app.use('/api', routes)
 
     this.app.use((_req, res) => {
@@ -105,8 +160,21 @@ class DashboardServer {
     })
   }
 
+  /**
+   * Attach bot event listeners and Socket.io connection handling.
+   * @param {object} botManager - BotManager instance
+   * @param {object} skillController - SkillController instance
+   */
   attachBot(botManager, skillController) {
     const connectedClients = new Set()
+
+    this.io.use((socket, next) => {
+      const token = socket.handshake.auth?.token || socket.handshake.query?.token
+      if (!this.auth.validateSocketToken(token)) {
+        return next(new Error('Authentication required'))
+      }
+      next()
+    })
 
     this.io.on('connection', (socket) => {
       if (connectedClients.size >= 50) {
@@ -161,6 +229,11 @@ class DashboardServer {
       this.io.emit('log', { type: 'warn', message: `Disconnected: ${safeReason}` })
     })
 
+    botManager.on('error', (err) => {
+      this.logger.error(`Bot error: ${err.message}`)
+      this.io.emit('log', { type: 'error', message: `Bot error: ${err.message}` })
+    })
+
     skillController.on('taskStart', (task) => {
       this.io.emit('taskStart', task)
       this.io.emit('log', { type: 'info', message: `Starting task: ${task.action}` })
@@ -186,7 +259,15 @@ class DashboardServer {
     })
   }
 
+  /**
+   * Stop the dashboard server.
+   * @returns {Promise<void>}
+   */
   async stop() {
+    if (this.auth && this.auth.cleanup) {
+      this.auth.cleanup()
+    }
+    this.io.close()
     return new Promise((resolve) => {
       this.server.close(() => {
         this.logger.info('Dashboard server stopped')
